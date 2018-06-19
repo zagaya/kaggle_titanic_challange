@@ -169,3 +169,5 @@ titanic = Titanic()
 # x_train, y_train, x_test, solution = titanic.data_prep2(), titanic.solution()
 
 x_train, y_train, x_test = titanic.data_prep2()
+
+print('ok')
