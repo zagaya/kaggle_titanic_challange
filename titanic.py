@@ -152,7 +152,7 @@ class Titanic():
         fare_intervals = [(0, 20), (20, 40), (40, 1000)]
         total = survival_rate_feature(total, 'Fare', 'FareRate', fare_intervals)
 
-        age_intervals = [(0, 2), (2, 10), (10, 22), (22, 35), (35, 55), (55, 65), (65,100)]
+        age_intervals = [(0, 1), (2, 10), (10, 22), (22, 35), (35, 55), (55, 65), (65,100)]
         total = survival_rate_feature(total, 'Age', 'AgeRate', age_intervals)
 
 
