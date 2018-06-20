@@ -98,8 +98,8 @@ class Titanic():
 
         total['Family'] = total['SibSp'] + total['Parch'] + 1
         total['isAlone'] = 0
-        total.loc[total['Family'] == 0, 'isAlone'] = 1
-        total.drop(['SibSp','Parch'], axis=1, inplace=True)
+        total.loc[total['Family'] == 1, 'isAlone'] = 1
+        total.drop(['SibSp', 'Parch'], axis=1, inplace=True)
 
         total.loc[((total['Age'] < 14) & (total['Title'] == 'Miss')), 'Title'] = 'GirlChildren'
 
@@ -152,6 +152,8 @@ class Titanic():
         total.loc[total['Sex'] == 'male', 'Sex'] = 1
         total.loc[total['Sex'] == 'female', 'Sex'] = 0
 
+        total.drop(['Surname', 'Name'], axis=1, inplace=True)
+
         # Labels Embark and Title
         features = ['Embarked', 'Title']
 
@@ -160,6 +162,8 @@ class Titanic():
             total.drop(f, axis=1, inplace=True)
 
             total = pd.concat((total, dummy), axis=1)
+
+
 
         train_set = total[total['train'] == 1]
         test_set = total[total['train'] == 0]
@@ -178,17 +182,14 @@ class Titanic():
         total['Family'] = total['SibSp'] + total['Parch'] + 1
         total['isAlone'] = 0
         total.loc[total['Family'] == 1, 'isAlone'] = 1
-        total.drop(['SibSp','Parch'], axis=1, inplace=True)
+        total.drop(['SibSp'], axis=1, inplace=True)
 
         total.loc[((total['Age'] < 14) & (total['Title'] == 'Miss')), 'Title'] = 'GirlChildren'
 
-        # Cabin has too many nans, drop it
-        total.drop(['Cabin', 'Ticket', 'PassengerId'], axis=1, inplace=True)
-
         # filling Embarked nans with majority case 'S'
         total.loc[total['Embarked'].isnull(), 'Embarked'] = 'S'
-
-        # fill nan for fare and age based on Pclass and Title medians respectively
+        #
+        # Fill nan for Fare and Age based on Pclass and Title medians respectively
 
         # Age based on Title
         for title in total['Title'].unique():
@@ -201,7 +202,6 @@ class Titanic():
                        (total['Fare'].isnull())), 'Fare'] = round(total[total['Pclass'] == pclass]['Fare'].median())
 
         def survival_rate_feature(total, feature, new_feature, intervals):
-
             total[new_feature] = 0
 
             for i, j in intervals:
@@ -213,28 +213,54 @@ class Titanic():
 
             return total.drop(feature, axis=1)
 
-        def survival_rate_group(total, new_feature='GroupSurvival'):
+        # total['Group'] = 0
+        # group_label = 0
+        # for surname in total['Surname'].unique():
+        #     same_name = total[((total['Surname'] == surname) & (total['Group'] == 0) & (total['isAlone'] == 0))]
+        #     group_label = group_label + 1
+        #
+        #     for ticket in same_name['Ticket'].unique():
+        #         total.loc[(((total['Surname'] == surname) | (total['Ticket'] == ticket))
+        #                    & (total['isAlone'] == 0)), 'Group'] = group_label
+        #
+        # for group_label in total['Group'].unique():
+        #     temp = total[(total['Group']==group_label) & (total['train']==1)]['Survived']
+        #     n_passengers = temp.shape[0]
+        #     print('label: {} \t npas: {} \t survived: {}')
+        #
+        #     if n_passengers:
+        #         rate = temp.sum()/n_passengers
+        #         total.loc[total['Group']==group_label,'GroupRate'] = round(rate,2)
+        #     else:
+        #         rate = 0.5
+        #         total.loc[total['Group'] == group_label, 'GroupRate'] = round(rate, 2)
+        total['Group'] = 0
+        group_label = 0
+        for ticket in total['Ticket'].unique():
 
-            total[new_feature] = 0
+            n_ticket = (total['Ticket'] == ticket).sum()
 
-            for surname in total['Surname'].unique():
-                for ticket in total['Ticket'].unique():
-                    temp = total[((total['Surname'] == surname) | (total['Ticket'] == ticket)) &
-                                 (total['isAlone'] != 1) &
-                                 (total['train'] == 1)]['Survived']
-                    if temp.s
-                    n_passengers = temp.shape[0]
-                    rate = temp.sum() / n_passengers
-                    total.loc[((total['Surname'] == surname) | (total['Ticket'] == ticket)) &
-                              (total['isAlone'] != 1), new_feature] = round(rate, 2)
-            # total[new_feature] = total[new_feature] / total[new_feature].max()
+            if n_ticket > 1:
+                group_label = group_label + 1
+                total.loc[(total['Ticket'] == ticket), 'Group'] = group_label
 
-            return total
+        # for group_label in total['Group'].unique():
+        #     temp = total[(total['Group']==group_label) & (total['train']==1)]['Survived']
+        #     n_passengers = temp.shape[0]
+        #     print('label: {} \t npas: {} \t survived: {}')
+        #
+        #     if n_passengers:
+        #         rate = temp.sum()/n_passengers
+        #         total.loc[total['Group']==group_label,'GroupRate'] = round(rate,2)
+        #     else:
+        #         rate = 0.5
+        #         total.loc[total['Group'] == group_label, 'GroupRate'] = round(rate, 2)
 
-        # 3 fasce di prezzo 1 - fino a 10, 2 - da 10 a 40, 3 piu di 40
-        # total.loc[total['Fare']<=10,'Fare']=1
-        # total.loc[((total['Fare']>10) & (total['Fare']<=40)),'Fare']=2
-        # total.loc[total['Fare']>40,'Fare']=3
+        # total.drop('Group', axis=1)
+        # total['Group'] = total['Group'].apply(lambda x: str(x))
+        # for group_label in total['Group'].unique():
+
+        total['Pclass'] = total['Pclass'].apply(lambda x: str(x))
 
         fare_intervals = [(0, 10), (10, 25), (25, 50), (50, 1000)]
         total = survival_rate_feature(total, 'Fare', 'FareRate', fare_intervals)
@@ -243,21 +269,16 @@ class Titanic():
         age_intervals = [(0, 1), (1, 10), (10, 25), (25, 50), (60, 100)]
         total = survival_rate_feature(total, 'Age', 'AgeRate', age_intervals)
 
-        #     total.loc[:,'Age'] = total.loc[:,'Age'].astype(int)
-        #     total.loc[:,'Fare'] = total.loc[:,'Fare'].astype(int)
-
         # Label sex
         total.loc[total['Sex'] == 'male', 'Sex'] = 1
         total.loc[total['Sex'] == 'female', 'Sex'] = 0
 
-        # Labels Embark and Title
-        features = ['Embarked', 'Title']
+        # Cabin has too many nans, drop it
+        total.drop(['Cabin', 'Ticket', 'PassengerId', 'Surname', 'Name'], axis=1, inplace=True)
 
-        for f in features:
-            dummy = pd.get_dummies(total[f], prefix=f)
-            total.drop(f, axis=1, inplace=True)
-
-            total = pd.concat((total, dummy), axis=1)
+        #
+        # Labels
+        total = pd.get_dummies(total)
 
         train_set = total[total['train'] == 1]
         test_set = total[total['train'] == 0]
@@ -268,46 +289,7 @@ class Titanic():
 
         return x_train, y_train, x_test
 
-titanic = Titanic()
-titanic.data_prep3()
 
-x_train, y_train, x_test = titanic.data_prep2()
-
-# XGBoost Classifier
-gbm = xgb.XGBClassifier(
-     learning_rate = 0.01,
-     n_estimators= 500,
-     max_depth= 3,
-     min_child_weight= 2,
-#      gamma=1,
-     gamma=0.9,
-     subsample=0.8,
-     colsample_bytree=0.8,
-     objective= 'binary:logistic',
-     nthread= -1,
-     scale_pos_weight=1).fit(x_train, y_train)
-
-predictions = gbm.predict(x_test).astype(int)
-
-print('Accuracy xgboost: {:.4f}'.format(accuracy_score(predictions,titanic.solution()['Survived'].values)))
-# titanic.write_predictions(predictions,'xgb_180618_prep2_02.csv') # score 0.80382
-
-knn_values = {
-              'n_neighbors': [i for i in range(1, 20)],
-              'weights': ['uniform', 'distance'],
-              'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute']
-              }
-
-knn = KNeighborsClassifier()
-# start = time.time()
-knn_acc = GridSearchCV(knn, param_grid=knn_values, scoring='accuracy').fit(x_train, y_train)
-print('Best paremeters: {}'.format(knn_acc.best_params_))
-print('Best score: {}'.format(knn_acc.best_score_))
-# print('Running time: {} min'.format(round((time.time() - start)/60, 1)))
-
-knn = knn_acc.best_estimator_.fit(x_train, y_train)
-
-predictions = knn.predict(x_test).astype(int)
-
-print('Accuracy knn: {:.4f}'.format(accuracy_score(predictions,titanic.solution()['Survived'].values)))
-
+# titanic = Titanic()
+#
+# x_train, y_train, x_test = titanic.data_prep3()
