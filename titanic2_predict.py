@@ -27,6 +27,11 @@ gbm = xgb.XGBClassifier(
     nthread=-1,
     scale_pos_weight=1).fit(train, labels)
 
+xgb_parameters = dict(learning_rate=0.01, n_estimators=500, max_depth=3, min_child_weight=2, gamma=0.9,
+                                       subsample=0.8, colsample_bytree=0.8, objective='binary:logistic', nthread=-1,
+                                       scale_pos_weight=1)
+
+
 predictions = gbm.predict(test).astype(int)
 
 print('Accuracy xgboost: {:.4f}'.format(accuracy_score(predictions, t1.Titanic().solution()['Survived'].values)))
